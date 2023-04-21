@@ -6,15 +6,18 @@
 //
 
 import os
+import Combine
 import SwiftUI
 import Foundation
 
-@available(iOS 14.0, *)
-public class Courrier: ObservableObject {
+@available(macOS 11.0, *)
+@available(iOS 15.0, *)
+public class Courrier: NSObject, ObservableObject, URLSessionDelegate {
     
     var host:String
     var apiKey: String?
     var token:String?
+    var scheme: String
     
     private let logger:Logger
     private let session: URLSession
@@ -24,11 +27,15 @@ public class Courrier: ObservableObject {
     var accept: String = "application/json"
     var connection: String = "close"
     
-    public init(host: String, apiKey: String?=nil, token: String?=nil) {
+    @Published public var uploadProgress: Double = 0.0
+    @Published private var isUploading = false
+    
+    public init(scheme: String = "https", host: String, apiKey: String?=nil, token: String?=nil) {
+        self.scheme = scheme
         self.host = host
         self.apiKey = apiKey
         self.token = token
-        self.logger = Logger(subsystem: "com.joeljoseph.hermes", category: "hermes")
+        self.logger = Logger(subsystem: "com.josephlabs.hermes", category: "hermes")
         self.session = URLSession(configuration: URLSessionConfiguration.default)
     }
     
@@ -76,14 +83,24 @@ public class Courrier: ObservableObject {
     }
     
     /// Creates an HTTP request
-    /// - Parameter endpoint:`Endpoint` path values and query parameters
-    /// - Parameter method: `Method` http method enum type
-    /// - Parameter body: `Data` body of the the request, a Data object
-    public func Request(endpoint: Endpoint, method:Method, body:Data? = nil) async throws -> (Data, URLResponse) {
+    ///
+    /// This function is asynchronous and can create any request
+    /// you can specify the requests through the headers dictionary and more.
+    ///
+    /// - Parameters:
+    ///    - endpoint: path values and query parameters
+    ///    - method: http method enum type
+    ///    - body: body of the the request, a Data object
+    ///    - headers: dictionary of headers if you want to overrite or add them
+    ///
+    /// - Throws: `NetworkError` if the response is not postive or if any errors occured.
+    ///
+    /// - Returns: (`Data`, `UrlRespone`) the response data and the response headers
+    public func Request(endpoint: Endpoint, method:Method, body:Data? = nil, headers: [String:String]?=nil) async throws -> (Data, URLResponse) {
         
         // construct request url
         var urlComp = URLComponents()
-        urlComp.scheme = "https"
+        urlComp.scheme = scheme
         urlComp.host = host
         urlComp.path = endpoint.path
         urlComp.queryItems = endpoint.queryItems
@@ -119,6 +136,11 @@ public class Courrier: ObservableObject {
         request.setValue(contentType, forHTTPHeaderField: "Content-Type")
         request.setValue(accept, forHTTPHeaderField: "Accept")
         request.setValue(connection, forHTTPHeaderField: "Connection")
+        if let extras = headers {
+            for(header, value) in extras {
+                request.setValue(value, forHTTPHeaderField: header)
+            }
+        }
         
         // log request
         logger.log("Making a \(request.httpMethod!) request to \(url)")
@@ -127,6 +149,81 @@ public class Courrier: ObservableObject {
         let (data, response) = try await _request(r: request)
         return (data, response)
     }
+    
+    /// Creates a data upload request
+    ///
+    /// This function is aschrounous and can upload any data type.
+    /// You can specify the data type throught the parameters.
+    ///
+    /// - Parameters:
+    ///    - endpoint: path values and query parameters
+    ///    - fileName: string of the file name
+    ///    - fileType: file type to extend the file by
+    ///    - contentType: url request content type
+    ///    - data: data to upload
+    ///
+    /// - Throws: `NetworkError` if the response is not postive or if any errors occured.
+    public func Upload(endpoint: Endpoint, fileName: String, fileType: String, contentType: String, data: Data) async throws {
+        
+        // construct request url
+        var urlComp = URLComponents()
+        urlComp.scheme = scheme
+        urlComp.host = host
+        urlComp.path = endpoint.path
+        urlComp.queryItems = endpoint.queryItems
+        
+        // create url
+        guard let url = urlComp.url else {
+            throw NetworkError.invalidURL
+        }
+        
+        // create url request object
+        var request = URLRequest(url: url)
+
+        request.httpMethod = "POST"
+        request.setValue(userAgent, forHTTPHeaderField: "User-Agent")
+        request.setValue(accept, forHTTPHeaderField: "Accept")
+        request.setValue(connection, forHTTPHeaderField: "Connection")
+        request.setValue("application/octet-stream", forHTTPHeaderField: "Content-Type")
+        request.setValue(fileName+fileType, forHTTPHeaderField: "X-Filename")
+
+        request.httpBody = data
+        
+        // log request
+        logger.log("Making a \(request.httpMethod!) request to \(url)")
+
+        // create session task
+        let session = URLSession(configuration: .default, delegate: self, delegateQueue: .main)
+        let task = session.uploadTask(with: request, from: data)
+        task.resume()
+        
+        // update variable on main thread
+        DispatchQueue.main.async {
+            self.isUploading = true
+        }
+    }
 }
 
 
+@available(iOS 15.0, *)
+extension Courrier: URLSessionTaskDelegate, URLSessionDataDelegate {
+    
+    /**
+     To keep track of how many bytes are being sent, and using it to calculate percatage of upload completion.
+     Uses main thread to update upload progress value
+     */
+    public func urlSession(_ session: URLSession, task: URLSessionTask, didSendBodyData bytesSent: Int64, totalBytesSent: Int64, totalBytesExpectedToSend: Int64) {
+        let progress = CGFloat(totalBytesSent) / CGFloat(totalBytesExpectedToSend)
+        DispatchQueue.main.async {
+            self.uploadProgress = progress
+        }
+    }
+    
+    /**
+     To keep track of upload completion
+     */
+    public func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+        self.isUploading = false
+        self.uploadProgress = 1.0
+    }
+}
