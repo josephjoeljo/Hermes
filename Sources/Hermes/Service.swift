@@ -10,7 +10,7 @@ import Combine
 import SwiftUI
 import Foundation
 
-@available(macOS 11.0, *)
+@available(macOS 13.0, *)
 @available(iOS 15.0, *)
 public class Courrier: NSObject, ObservableObject, URLSessionDelegate {
     
@@ -163,14 +163,13 @@ public class Courrier: NSObject, ObservableObject, URLSessionDelegate {
     ///    - data: data to upload
     ///
     /// - Throws: `NetworkError` if the response is not postive or if any errors occured.
-    public func Upload(endpoint: Endpoint, fileName: String, fileType: String, contentType: String, data: Data) async throws {
+    public func Upload(endpoint: Endpoint, fileName: String, fileType: String, contentType: String, data: Data ) async throws -> (Data, URLResponse) {
         
         // construct request url
         var urlComp = URLComponents()
         urlComp.scheme = scheme
         urlComp.host = host
         urlComp.path = endpoint.path
-        urlComp.queryItems = endpoint.queryItems
         
         // create url
         guard let url = urlComp.url else {
@@ -179,33 +178,64 @@ public class Courrier: NSObject, ObservableObject, URLSessionDelegate {
         
         // create url request object
         var request = URLRequest(url: url)
-
+        
+        // request values
         request.httpMethod = "POST"
         request.setValue(userAgent, forHTTPHeaderField: "User-Agent")
         request.setValue(accept, forHTTPHeaderField: "Accept")
         request.setValue(connection, forHTTPHeaderField: "Connection")
-        request.setValue("application/octet-stream", forHTTPHeaderField: "Content-Type")
         request.setValue(fileName+fileType, forHTTPHeaderField: "X-Filename")
-
         request.httpBody = data
+        
+        switch(fileType){
+        case ".jpeg":
+            request.setValue("image/jpeg", forHTTPHeaderField: "Content-Type")
+        case ".heic":
+            request.setValue("image/heic", forHTTPHeaderField: "Content-Type")
+        default:
+            request.setValue("application/octet-stream", forHTTPHeaderField: "Content-Type")
+        }
+    
         
         // log request
         logger.log("Making a \(request.httpMethod!) request to \(url)")
-
-        // create session task
-        let session = URLSession(configuration: .default, delegate: self, delegateQueue: .main)
-        let task = session.uploadTask(with: request, from: data)
-        task.resume()
-        
+    
         // update variable on main thread
         DispatchQueue.main.async {
             self.isUploading = true
+        }
+        
+        // upload task
+        let (data, response) = try await _upload(r: request)
+        return (data, response)
+    }
+    
+    /// Perform an HTTP request
+    /// - Parameter r:`URLRequest` url request to perform
+    private func _upload(r: URLRequest) async throws -> (Data, URLResponse) {
+        do {
+            
+            // do request
+            let (data, resp) = try await self.session.data(for: r)
+            
+            // throw error if response status not under 299
+            guard (resp as? HTTPURLResponse)!.statusCode <= 299 else {
+                throw NetworkError.serverError(statusCode: (resp as? HTTPURLResponse)!.statusCode)
+            }
+            
+            return (data, resp) // return data/response
+            
+        } catch {
+            // convert error to Network Error
+            let err =  _handleHttpError(error: error)
+            throw err
         }
     }
 }
 
 
 @available(iOS 15.0, *)
+@available(macOS 13.0, *)
 extension Courrier: URLSessionTaskDelegate, URLSessionDataDelegate {
     
     /**

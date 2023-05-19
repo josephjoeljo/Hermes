@@ -23,14 +23,14 @@ extension NetworkError: LocalizedError {
             return NSLocalizedString("request timed out", comment: "")
         case .invalidURL:
             return NSLocalizedString("invalid url", comment: "")
-        case .serverError:
-            return NSLocalizedString("server error", comment: "check the status code")
-        case .cannotConnectToHost:
-            return NSLocalizedString("cannot connect to host", comment: "")
+        case .serverError(let statusCode):
+            return NSLocalizedString("server error - \(statusCode)", comment: "check the status code")
+        case .cannotConnectToHost(let error):
+            return NSLocalizedString("cannot connect to host - \(error.localizedDescription)", comment: "")
         case .notConnectedToInternet:
             return NSLocalizedString("not connected to the internet", comment: "")
-        case .unknown:
-            return NSLocalizedString("unknown error", comment: "check error for details")
+        case .unknown(let error):
+            return NSLocalizedString("unknown error - \(error.localizedDescription)", comment: "check error for details")
         }
     }
 }
