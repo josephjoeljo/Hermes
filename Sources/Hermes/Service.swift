@@ -25,7 +25,7 @@ public class Courrier: NSObject, ObservableObject, URLSessionDelegate {
     var userAgent: String = "hermes-ios"
     var contentType: String = "application/json"
     var accept: String = "application/json"
-    var connection: String = "close"
+    var connection: String = "keep-alive"
     
     @Published public var uploadProgress: Double = 0.0
     @Published private var isUploading = false
@@ -125,13 +125,6 @@ public class Courrier: NSObject, ObservableObject, URLSessionDelegate {
             request.httpMethod = "DELETE"
         }
         
-        // request parameters
-        if let key = apiKey {
-            request.setValue(key, forHTTPHeaderField: "api-key")
-        }
-        if let tkn = token {
-            request.setValue(tkn, forHTTPHeaderField: "Authorization")
-        }
         request.setValue(userAgent, forHTTPHeaderField: "User-Agent")
         request.setValue(contentType, forHTTPHeaderField: "Content-Type")
         request.setValue(accept, forHTTPHeaderField: "Accept")
