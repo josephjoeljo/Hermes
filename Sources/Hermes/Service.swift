@@ -14,32 +14,30 @@ import Foundation
 @available(iOS 15.0, *)
 public class Courrier: NSObject, ObservableObject, URLSessionDelegate {
     
-    var host:String
-    var apiKey: String?
-    var token:String?
-    var scheme: String
+    public var host:String
+    public var apiKey: String?
+    public var scheme: String
     
     private let logger:Logger
     private let session: URLSession
    
-    var userAgent: String = "hermes-ios"
-    var contentType: String = "application/json"
-    var accept: String = "application/json"
-    var connection: String = "keep-alive"
+    public var userAgent: String = "hermes-ios"
+    public var contentType: String = "application/json"
+    public var accept: String = "application/json"
+    public var connection: String = "keep-alive"
     
     @Published public var uploadProgress: Double = 0.0
     @Published private var isUploading = false
     
-    public init(scheme: String = "https", host: String, apiKey: String?=nil, token: String?=nil) {
+    public init(scheme: String = "https", host: String, apiKey: String?=nil) {
         self.scheme = scheme
         self.host = host
         self.apiKey = apiKey
-        self.token = token
         self.logger = Logger(subsystem: "com.josephlabs.hermes", category: "hermes")
         self.session = URLSession(configuration: URLSessionConfiguration.default)
     }
     
-    /// Handle our custom errro NetworkError
+    /// Handle our custom errro NetworkErrhor
     /// - Parameter error:`Error` error to handle
     private func _handleHttpError(error: Error) -> NetworkError {
         if let urlError = error as? URLError {
@@ -57,28 +55,6 @@ public class Courrier: NSObject, ObservableObject, URLSessionDelegate {
             return err
         } else {
             return NetworkError.unknown(error)
-        }
-    }
-    
-    /// Perform an HTTP request
-    /// - Parameter r:`URLRequest` url request to perform
-    private func _request(r: URLRequest) async throws -> (Data, URLResponse) {
-        do {
-            
-            // do request
-            let (data, resp) = try await self.session.data(for: r)
-            
-            // throw error if response status not under 299
-            guard (resp as? HTTPURLResponse)!.statusCode <= 299 else {
-                throw NetworkError.serverError(statusCode: (resp as? HTTPURLResponse)!.statusCode)
-            }
-            
-            return (data, resp) // return data/response
-            
-        } catch {
-            // convert error to Network Error
-            let err =  _handleHttpError(error: error)
-            throw err
         }
     }
     
@@ -156,7 +132,7 @@ public class Courrier: NSObject, ObservableObject, URLSessionDelegate {
     ///    - data: data to upload
     ///
     /// - Throws: `NetworkError` if the response is not postive or if any errors occured.
-    public func Upload(endpoint: Endpoint, fileName: String, fileType: String, contentType: String, data: Data ) async throws -> (Data, URLResponse) {
+    public func Upload(endpoint: Endpoint, fileName: String, fileType: String, contentType: String, data: Data, headers: [String:String]?=nil ) async throws -> (Data, URLResponse) {
         
         // construct request url
         var urlComp = URLComponents()
@@ -177,7 +153,7 @@ public class Courrier: NSObject, ObservableObject, URLSessionDelegate {
         request.setValue(userAgent, forHTTPHeaderField: "User-Agent")
         request.setValue(accept, forHTTPHeaderField: "Accept")
         request.setValue(connection, forHTTPHeaderField: "Connection")
-        request.setValue(fileName+fileType, forHTTPHeaderField: "X-Filename")
+        request.setValue(fileName+fileType, forHTTPHeaderField: "f")
         request.httpBody = data
         
         switch(fileType){
@@ -188,7 +164,11 @@ public class Courrier: NSObject, ObservableObject, URLSessionDelegate {
         default:
             request.setValue("application/octet-stream", forHTTPHeaderField: "Content-Type")
         }
-    
+        if let extras = headers {
+            for(header, value) in extras {
+                request.setValue(value, forHTTPHeaderField: header)
+            }
+        }
         
         // log request
         logger.log("Making a \(request.httpMethod!) request to \(url)")
@@ -201,6 +181,28 @@ public class Courrier: NSObject, ObservableObject, URLSessionDelegate {
         // upload task
         let (data, response) = try await _upload(r: request)
         return (data, response)
+    }
+    
+    /// Perform an HTTP request
+    /// - Parameter r:`URLRequest` url request to perform
+    private func _request(r: URLRequest) async throws -> (Data, URLResponse) {
+        do {
+            
+            // do request
+            let (data, resp) = try await self.session.data(for: r)
+            
+            // throw error if response status not under 299
+            guard (resp as? HTTPURLResponse)!.statusCode <= 299 else {
+                throw NetworkError.serverError(statusCode: (resp as? HTTPURLResponse)!.statusCode)
+            }
+            
+            return (data, resp) // return data/response
+            
+        } catch {
+            // convert error to Network Error
+            let err =  _handleHttpError(error: error)
+            throw err
+        }
     }
     
     /// Perform an HTTP request
