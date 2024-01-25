@@ -7,6 +7,9 @@
 
 import Foundation
 
+/// Http method enum
+///
+/// We use this enum to specify the method of our http request
 public enum Method {
     case GET
     case POST

@@ -7,7 +7,10 @@
 
 import Foundation
 
-enum NetworkError: Error {
+/// Errors thrown by the Courrier
+///
+/// You can use the localized description variable to get a better understanding of the error
+public enum NetworkError: Error {
     case serverError(statusCode: Int)
     case invalidURL
     case timedOut

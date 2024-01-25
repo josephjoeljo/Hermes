@@ -7,11 +7,19 @@
 
 import Foundation
 
+/// Endpoint Class
+///
+/// This class helps us wrap up the path of our individual requests
 public class Endpoint {
     public let path: String
     public let queryItems: [URLQueryItem]?
     
-    public init(path: String, queryItems:[URLQueryItem]?=nil){
+    /// Initalizer function for the endpoint class
+    ///
+    /// - Parameters:
+    ///     - path: a `string` of your url path
+    ///     - queryItems: an array of `URLQueryItem` to add to your url path
+    public init(_ path: String, queryItems:[URLQueryItem]?=nil){
         self.path = path
         self.queryItems = queryItems
     }
