@@ -69,7 +69,15 @@ public class Courrier: NSObject, ObservableObject, URLSessionDelegate {
         case .HTTPS:
             urlComp.scheme = "https"
         }
-        urlComp.host = host
+        
+        let hostValues = splitHostName(host)
+        if hostValues.count > 1 {
+            urlComp.host = hostValues[0]
+            urlComp.port = Int(hostValues[1])
+        } else {
+            urlComp.host = hostValues[0]
+        }
+        
         urlComp.path = endpoint.path
         urlComp.queryItems = endpoint.queryItems
         
@@ -134,7 +142,15 @@ public class Courrier: NSObject, ObservableObject, URLSessionDelegate {
         case .HTTPS:
             urlComp.scheme = "https"
         }
-        urlComp.host = host
+        
+        let hostValues = splitHostName(host)
+        if hostValues.count > 1 {
+            urlComp.host = hostValues[0]
+            urlComp.port = Int(hostValues[1])
+        } else {
+            urlComp.host = hostValues[0]
+        }
+        
         urlComp.path = endpoint.path
         
         // create url

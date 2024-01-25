@@ -17,6 +17,14 @@ let service = Courrier(.HTTP, host:"your-host")
 
 ```
 
+### Use a hostname with port
+```swift
+import Hermes
+
+let service = Courrier(.HTTP, host:"localhost:80")
+
+```
+
 ### Making a GET Request
 ```swift
 // your queries

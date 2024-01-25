@@ -108,4 +108,31 @@ final class HermesTests: XCTestCase {
             XCTAssertEqual(e.localizedDescription, "unexpected error - bad URL")
         }
     }
+    
+    func testHostWithPort() async throws {
+        let service = Courrier(.HTTPS, host: "localhost:81")
+        let endpoint = Endpoint("/get")
+        do {
+            let (_, _) = try await service.Request(.GET, endpoint)
+        } catch {
+            let e = error as! NetworkError
+            XCTAssertEqual(e.localizedDescription, "cannot connect to host - Could not connect to the server.")
+        }
+    }
+    
+    
+    func testSplittingHostname() async throws {
+        let host = "localhost:8080"
+        let values = splitHostName(host)
+        XCTAssert(values.count > 1)
+        XCTAssertEqual(values[0], "localhost")
+        XCTAssertEqual(values[1], "8080")
+    }
+    
+    func testNotSplittingHostname() async throws {
+        let host = "localhost"
+        let values = splitHostName(host)
+        XCTAssert(values.count == 1)
+        XCTAssertEqual(values[0], "localhost")
+    }
 }
