@@ -33,7 +33,7 @@ extension NetworkError: LocalizedError {
         case .notConnectedToInternet:
             return NSLocalizedString("not connected to the internet", comment: "")
         case .unknown(let error):
-            return NSLocalizedString("unknown error - \(error.localizedDescription)", comment: "check error for details")
+            return NSLocalizedString("unexpected error - \(error.localizedDescription)", comment: "check error for details")
         }
     }
 }

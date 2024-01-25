@@ -86,4 +86,26 @@ final class HermesTests: XCTestCase {
         XCTAssertEqual(code, 200, "Response code was not OK")
         XCTAssertEqual(header, headerValue, "Failed to find header")
     }
+    
+    func testBadRequest() async throws {
+        let service = Courrier(.HTTPS, host: "httpbin.org")
+        let endpoint = Endpoint("/status/undefined")
+        do {
+            let (_, _) = try await service.Request(.GET, endpoint)
+        } catch {
+            let e = error as! NetworkError
+            XCTAssertEqual(e.localizedDescription, NetworkError.serverError(statusCode: 400).localizedDescription)
+        }
+    }
+    
+    func testBadURL() async throws {
+        let service = Courrier(.HTTPS, host: "0")
+        let endpoint = Endpoint("/get")
+        do {
+            let (_, _) = try await service.Request(.GET, endpoint)
+        } catch {
+            let e = error as! NetworkError
+            XCTAssertEqual(e.localizedDescription, "unexpected error - bad URL")
+        }
+    }
 }
