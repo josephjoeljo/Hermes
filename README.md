@@ -52,7 +52,6 @@ try {
 }
 ```
 
-
 ### Using Custom Headers
 ```swift
 let dict = [
@@ -70,6 +69,13 @@ try {
 }
 ```
 
+### Error Handling
+Force cast down the error thrown as a Network Error
+And print the localized Description to see its contents
+```swift
+let newError = error as! NetworkError
+print(newError.localizedDescription)
+```
 
 ## Contributing
 
