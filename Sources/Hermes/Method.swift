@@ -12,7 +12,12 @@ import Foundation
 /// We use this enum to specify the method of our http request
 public enum Method {
     case GET
+    case HEAD
     case POST
     case PUT
     case DELETE
+    case CONNECT
+    case OPTIONS
+    case TRACE
+    case PATCH
 }

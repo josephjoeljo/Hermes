@@ -92,6 +92,8 @@ public class Courrier: NSObject, ObservableObject, URLSessionDelegate {
         switch (method) {
         case .GET:
             request.httpMethod = "GET"
+        case .HEAD:
+            request.httpMethod = "HEAD"
         case .POST:
             request.httpMethod = "POST"
             request.httpBody = body
@@ -100,6 +102,15 @@ public class Courrier: NSObject, ObservableObject, URLSessionDelegate {
             request.httpBody = body
         case .DELETE:
             request.httpMethod = "DELETE"
+        case .CONNECT:
+            request.httpMethod = "CONNECT"
+        case .OPTIONS:
+            request.httpMethod = "OPTIONS"
+        case .TRACE:
+            request.httpMethod = "TRACE"
+        case .PATCH:
+            request.httpMethod = "PATCH"
+            request.httpBody = body
         }
         
         request.setValue(userAgent, forHTTPHeaderField: "User-Agent")
