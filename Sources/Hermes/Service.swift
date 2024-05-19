@@ -228,7 +228,7 @@ public class Courrier: NSObject, ObservableObject, URLSessionDelegate {
             let (data, resp) = try await self.session.data(for: r)
             
             // throw error if response status not under 299
-            guard (resp as? HTTPURLResponse)!.statusCode <= 299 else {
+            guard (resp as? HTTPURLResponse)!.statusCode <= 500 else {
                 throw NetworkError.serverError(statusCode: (resp as? HTTPURLResponse)!.statusCode)
             }
             
@@ -250,7 +250,7 @@ public class Courrier: NSObject, ObservableObject, URLSessionDelegate {
             let (data, resp) = try await self.session.data(for: r)
             
             // throw error if response status not under 299
-            guard (resp as? HTTPURLResponse)!.statusCode <= 299 else {
+            guard (resp as? HTTPURLResponse)!.statusCode <= 500 else {
                 throw NetworkError.serverError(statusCode: (resp as? HTTPURLResponse)!.statusCode)
             }
             
