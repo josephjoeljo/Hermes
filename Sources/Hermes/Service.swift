@@ -197,6 +197,8 @@ public class Courrier: NSObject, ObservableObject, URLSessionDelegate {
             request.setValue("video/mp4", forHTTPHeaderField: "Content-Type")
         case .WEBM:
             request.setValue("video/webm", forHTTPHeaderField: "Content-Type")
+        case .JSON:
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         default:
             request.setValue("application/octet-stream", forHTTPHeaderField: "Content-Type")
         }

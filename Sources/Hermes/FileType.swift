@@ -20,5 +20,6 @@ public enum FileType {
     case WEBA
     case WEBM
     case WEBP
+    case JSON
     case ANY
 }
